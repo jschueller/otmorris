@@ -28,24 +28,33 @@ class MorrisFunction(ot.OpenTURNSPythonFunction):
     >>> ot.RandomGenerator.SetSeed(123)
     >>> b0 = ot.DistFunc.rNormal()
     >>> alpha = ot.DistFunc.rNormal(10)
-    >>> beta =  ot.DistFunc.rNormal(6*14)
-    >>> gamma =  ot.DistFunc.rNormal(20*14)
+    >>> beta = ot.DistFunc.rNormal(6 * 14)
+    >>> gamma = ot.DistFunc.rNormal(20 * 14)
     >>> f = ot.Function(MorrisFunction(alpha, beta, gamma, b0))
-    >>> input_sample = ot.ComposedDistribution([ot.Uniform(0,1)] * 20).getSample(20)
+    >>> input_sample = ot.ComposedDistribution([ot.Uniform(0.0, 1.0)] * 20).getSample(20)
     >>> output_sample = f(input_sample)
 
     """
-    def __init__(self, alpha = ot.Point(10), beta = ot.Point(14*6),\
-                 gamma = ot.Point(20*14), b0 = 0.0):
+    def __init__(self, alpha = None, beta = None, gamma = None, b0 = 0.0):
         ot.OpenTURNSPythonFunction.__init__(self, 20, 1)
         self.b0 = float(b0)
         # Check alpha dimension
-        assert(len(alpha) == 10)
+        if alpha is None:
+            alpha = [0.0] * 10
+        else:
+            assert(len(alpha) == 10)
         self.b1 = [20] * 10 + list(alpha)
-        # Check beta and gamma dimension
-        assert(len(beta) == 6 * 14)
-        assert(len(gamma) == 20 * 14)
-        self.b2 = [[0] *20] * 20
+        # Check beta dimension
+        if beta is None:
+            beta = [0.0] * 6 * 14
+        else:
+            assert(len(beta) == 6 * 14)
+        # Check gamma dimension
+        if gamma is None:
+            gamma = [0.0] * 20 * 14
+        else:
+            assert(len(gamma) == 20 * 14)
+        self.b2 = [[0.0] *20] * 20
         for i in range(6):
             for j in range(6):
                 self.b2[i][j] = -15.0
@@ -62,13 +71,13 @@ class MorrisFunction(ot.OpenTURNSPythonFunction):
                 self.b2[i][j] = gamma[k]
 
         # b3
-        self.b3 = [[[0]*20]*20]*20
+        self.b3 = [[[0.0] * 20] * 20] * 20
         for i in range(5):
             for j in range(5):
                 for k in range(5):
                     self.b3[i][j][k] = -10.0
         # b4
-        self.b4 = [[[[0]*20]*20]*20]*20
+        self.b4 = [[[[0.0] * 20] * 20] * 20] * 20
         for i in range(4):
             for j in range(4):
                 for k in range(4):
@@ -76,21 +85,22 @@ class MorrisFunction(ot.OpenTURNSPythonFunction):
                         self.b4[i][j][k][l] = 5
 
     def _exec(self, x):
-        assert (len(x)==20)
+        assert len(x) == 20, "x must be of dim 20"
         b1 = self.b1
         b2 = self.b2
         b3 = self.b3
         b4 = self.b4
         # X is a list, transform it into array
         X = ot.Point(x)
-        w = (X - [0.5]*20)*2
-        for k in [2,4,6]:
-           w[k] = 2.0 * (1.1 * X[k] / (X[k] + 0.1) - 0.5)
+        w = (X - [0.5] * 20) * 2
+        for k in [2, 4, 6]:
+            w[k] = 2.0 * (1.1 * X[k] / (X[k] + 0.1) - 0.5)
         y = w.dot(b1)
         # Morris function
         for i in range(19):
             for j in range(i + 1, 20):
                 y +=  b2[i][j] * w[i] * w[j]
+
         for i in range(18):
             for j in range(i + 1, 19):
                 for k in range(j + 1, 20):
